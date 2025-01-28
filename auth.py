@@ -60,7 +60,7 @@ def login_func(username, password):
     user = find_user(username, password, users_collection)
 
     if user:
-        return "Login successful!", "green",user["role"]
+        return "Login successful!", "green"
     else:
         return "Invalid username or password!", "red"
 
