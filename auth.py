@@ -62,7 +62,7 @@ def login_func(username, password):
     if user:
         return "Login successful!", "green",user["role"]
     else:
-        return "Invalid username or password!", "red",user["role"]
+        return "Invalid username or password!", "red"
 
 def fetch_users():
     # Retrieve all documents
