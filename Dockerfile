@@ -4,13 +4,13 @@ FROM python:3.9-slim
 # Set the working directory in the container
 WORKDIR /app
 # Copy the requirements file into the container at /app
-COPY requirements.txt .
+COPY requirements.txt /app/requirements.txt
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the current directory contents into the container at /app
-COPY . .
+COPY . /app
 
 # Install python-dotenv to load .env files
 RUN pip install python-dotenv
@@ -26,7 +26,7 @@ ENV MONGO_DB=${MONGO_DB}
 ENV MONGO_COLLECTION=${MONGO_COLLECTION}
 
 # Make port 80 available to the world outside this container
-EXPOSE 80
+EXPOSE 8080
 
 # Run the FastAPI app with uvicorn
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80", "--reload"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
