@@ -26,12 +26,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Build and push Docker image (latest)
         uses: docker/build-push-action@v2
         with:
           context: .
           push: true
           tags: ghcr.io/chahineba/cloud-backend:latest
+          cache-from: type=registry,ref=ghcr.io/chahineba/cloud-backend:latest
+          cache-to: type=inline
           build-args: |
             MONGO_URI=${{ secrets.MONGO_URI }}
             MONGO_DB=${{ secrets.MONGO_DB }}
@@ -43,6 +45,8 @@ jobs:
           context: .
           push: true
           tags: ghcr.io/chahineba/cloud-backend:${{ github.sha }}
+          cache-from: type=registry,ref=ghcr.io/chahineba/cloud-backend:latest
+          cache-to: type=inline
           build-args: |
             MONGO_URI=${{ secrets.MONGO_URI }}
             MONGO_DB=${{ secrets.MONGO_DB }}
@@ -57,8 +61,26 @@ jobs:
         run: |
           oc login --server=${{ secrets.OPENSHIFT_SERVER }} --token=${{ secrets.OPENSHIFT_TOKEN }}
 
-      - name: Deploy to OpenShift
+      - name: Switch to OpenShift project
         run: |
           oc project ${{ secrets.OPENSHIFT_PROJECT }}
-          oc new-app ghcr.io/chahineba/cloud-backend:${{ github.sha }} --name=cloud-backend
-          oc expose svc/cloud-backend
+
+      - name: Deploy or Update OpenShift App
+        run: |
+          if oc get deployment cloud-backend &>/dev/null; then
+            echo "Updating existing deployment..."
+            oc set image deployment/cloud-backend cloud-backend=ghcr.io/chahineba/cloud-backend:${{ github.sha }}
+          else
+            echo "Creating new deployment..."
+            oc new-app ghcr.io/chahineba/cloud-backend:${{ github.sha }} --name=cloud-backend
+          fi
+
+      - name: Expose Service (if not exists)
+        run: |
+          if ! oc get route cloud-backend &>/dev/null; then
+            oc expose svc/cloud-backend
+          fi
+
+      - name: Wait for Deployment Rollout
+        run: |
+          oc rollout status deployment/cloud-backend
